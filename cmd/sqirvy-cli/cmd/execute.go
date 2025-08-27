@@ -39,7 +39,8 @@ func executeQuery(model string, temperature float64, system string, args []strin
 	// Determine the AI provider based on the selected model
 	provider, err := sqirvy.GetProviderName(model)
 	if err != nil {
-		return "", fmt.Errorf("error: model is not supported %s: %v", model, err)
+		// many of the models are not registered with sqirvy, so we need to try with OPENAI
+		provider = "openai"
 	}
 
 	// Create client for the provider

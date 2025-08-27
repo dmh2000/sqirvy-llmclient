@@ -35,6 +35,8 @@ const (
 type Options struct {
 	Temperature float32 // Controls the randomness of the output
 	MaxTokens   int64   // Maximum number of tokens in the response
+	APIKey      string  // Optional API key override
+	BaseUrl     string  // Optional Base URL override
 }
 
 // Client provides a unified interface for AI operations.

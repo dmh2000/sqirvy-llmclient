@@ -65,11 +65,6 @@ func NewOpenAIClient() (*OpenAIClient, error) {
 // It sends a text query to OpenAI models and returns the generated text response.
 // It returns an error if the query fails or the model is invalid.
 func (c *OpenAIClient) QueryText(ctx context.Context, system string, prompts []string, model string, options Options) (string, error) {
-	// validate the model
-	provider, err := GetProviderName(model)
-	if err != nil || provider != OpenAI {
-		return "", fmt.Errorf("invalid or unsupported OpenAI model: %s", model)
-	}
 
 	// scale the temperature
 	options.Temperature = options.Temperature * c.temperatureScale
