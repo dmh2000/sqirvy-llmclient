@@ -1,138 +1,128 @@
-# AI Client APIs Documentation
+# Sqirvy LLM Client
 
-This document describes the APIs available for interacting with various AI providers (Google Gemini, and OpenAI).
+A unified Go library and command-line tool for interacting with multiple Large Language Model (LLM) providers. This library provides a way to add a simple AI query to your Go applications.
 
-## Common Interface
+## Sqirvy LLM Client Library
 
-All providers implement the following interface for making queries. See pkg/sqirvy/client.go for the full interface definition.
+The `sqirvy-llmclient` library provides a consistent, unified interface for working with AI language models from different providers. It abstracts away provider-specific implementations behind a common `Client` interface, making it easy to switch between different AI models and providers in your Go applications.
+
+### Supported Providers
+
+- **Anthropic**: Claude models (Sonnet, Opus, Haiku)
+- **Google**: Gemini models (Pro, Flash)
+- **OpenAI**: GPT models
+
+### Key Features
+
+- **Unified Interface**: Single `Client` interface works with all supported providers
+- **LangChain Integration**: Built on top of the robust LangChain Go library
+- **Model Management**: Centralized model registry with token limits and provider mappings
+- **Configuration Options**: Support for temperature, max tokens, custom API keys, and base URLs
+- **Error Handling**: Comprehensive error handling with detailed error messages
+- **Security**: Request timeouts and input validation
+
+### Quick Start
 
 ```go
-// pkg/sqirvy/client.go
-const (
-    Anthropic Provider = "anthropic" // Anthropic's Claude models
-    Gemini    Provider = "gemini"    // Google's Gemini models
-    OpenAI    Provider = "openai"    // OpenAI's GPT models
-    MetaLlama Provider = "llama"     // Meta's Llama models
+import "github.com/dmh2000/sqirvy-llmclient"
+
+// Create a client for any supported provider
+client, err := sqirvy.NewClient("anthropic")
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
+
+// Query the model
+ctx := context.Background()
+response, err := client.QueryText(
+    ctx,
+    "You are a helpful assistant",
+    []string{"What is the capital of France?"},
+    "claude-sonnet-4",
+    sqirvy.Options{Temperature: 0.5, MaxTokens: 1000},
 )
-
-type Options struct {
-    Temperature float32 // Controls randomness (0-100)
-    MaxTokens   int64   // Maximum tokens in response
-}
-
-type Client interface {
-    QueryText(ctx context.Context, system string, prompts []string, model string, options Options) (string, error)
-}
-
-func NewClient(provider Provider) (Client, error)
 ```
 
-## Usage Example
+For detailed API documentation, usage examples, and provider-specific information, see [API.md](API.md).
 
-See the code in directory 'examples' for complete examples of using the client APIs.
+## Sqirvy CLI Tool
 
-```go
-model := "gemini-pro"
-systemPrompt := "you are a helpful chatbot"
-userPrompts := []string{"What is the meaning of life?"}
+The `sqirvy-cli` command-line tool provides an intuitive interface for AI-powered tasks from the terminal. It's designed for pipeline usage, making it easy to integrate AI capabilities into shell scripts and command workflows.
 
-// Create a new client
-client, err := NewClient(sqirvy.Gemini)
-if err != nil {
-    log.Fatal(err)
-}
+### Features
 
-// Configure options
-options := Options{
-    Temperature: 50,    // 50% temperature
-    MaxTokens: 8192,    // Default token limit
-}
+- **Multiple Commands**: Specialized commands for different AI tasks
+  - `query` - General purpose AI queries (default command)
+  - `plan` - Generate plans and strategies
+  - `code` - Generate source code
+  - `review` - Perform code reviews
+- **Pipeline Support**: Reads from stdin, files, and URLs; outputs to stdout
+- **Flexible Input**: Supports multiple input sources simultaneously
+- **Model Selection**: Choose from any supported model with `-m/--model` flag
+- **Configuration**: YAML configuration file support and environment variables
+- **Web Scraping**: Built-in URL content extraction for AI analysis
 
-// Query for text
-response, err := client.QueryText(ctx, systemPrompt, userPrompts, model, options)
-if err != nil {
-    log.Fatal(err)
-}
+### Installation
+
+```bash
+# Build from source
+make build
+
+# Binary will be created at cmd/bin/sqirvy-cli
 ```
 
-## Error Handling
+### Quick Examples
 
-All methods return errors in the following cases:
+```bash
+# Basic query (query is the default command)
+echo "What is Go?" | sqirvy-cli
 
-- Missing API keys
-- Empty or invalid prompts
-- Invalid temperature values (must be 0-100)
-- API request failures
-- Invalid responses
+# Generate a plan
+sqirvy-cli plan -m claude-sonnet-4 "Build a web application"
 
-## Environment Variables
+# Code review
+sqirvy-cli review -m gemini-2.5-flash main.go
 
-The following environment variables are used:
+# Generate code
+echo "Create a REST API endpoint" | sqirvy-cli code > api.go
 
-- `ANTHROPIC_API_KEY` - For Anthropic Claude API access
-- `GEMINI_API_KEY` - For Google Gemini API access
-- `LLAMA_API_KEY` and `LLAMA_BASE_URL` - For Meta Llama API access
-- `OPENAI_API_KEY` - For OpenAI API access
+# Use with files and URLs
+sqirvy-cli query -m gpt-5 file1.go file2.go https://example.com
 
-## Provider-Specific Implementations
-
-### Google Gemini Client
-
-The Gemini client interfaces with Google's Gemini models.
-
-#### Models
-
-- Tested with: `gemini-pro`, `gemini-pro-vision`
-
-#### Features
-
-- Temperature scaled to 0-2.0 range
-- Uses generative model with text/plain MIME type
-- Concatenates multiple response parts
-- Returns error if prompt is empty
-
-### OpenAI Client
-
-The OpenAI client interfaces with GPT models via the OpenAI API.
-
-#### Models
-
-- Tested with: `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
-
-#### Features
-
-- Temperature scaled to 0-2.0 range
-- Default max tokens: 8192
-- Returns error if prompt is empty
-- Supports custom base URL via environment variable
-
-## Utility Functions
-
-The package also provides utility functions in pkg/util for:
-
-### File Operations
-
-```go
-// Read from stdin if available
-func InputIsFromPipe() (bool, error)
-func ReadStdin(maxTotalBytes int64) (data string, size int64, err error)
-
-// Read from files
-func ReadFile(fname string, maxTotalBytes int64) ([]byte, int64, error)
-func ReadFiles(filenames []string, maxTotalBytes int64) (string, int64, error)
+# Pipeline usage
+cat requirements.txt | sqirvy-cli plan | sqirvy-cli code > implementation.go
 ```
 
-### Web Scraping
+### Configuration
 
-```go
-// Scrape content from URLs
-func ScrapeURL(link string) (string, error)
-func ScrapeAll(urls []string) (string, error)
+Create a configuration file at `~/.config/sqirvy-cli/config.yaml`:
+
+```yaml
+model: claude-3-5-haiku
+temperature: 0.25
 ```
 
-These utilities handle:
-- File path validation and cleaning
-- Size limit enforcement
-- Error handling for missing/invalid files
-- URL validation and scraping
-- Content formatting with Markdown code blocks
+Set required environment variables:
+
+- `ANTHROPIC_API_KEY` - For Claude models
+- `GEMINI_API_KEY` - For Gemini models
+- `OPENAI_API_KEY` - For OpenAI models
+
+### Commands
+
+- **sqirvy-cli query** - Send arbitrary queries to the LLM
+- **sqirvy-cli plan** - Generate plans, strategies, and architectural designs
+- **sqirvy-cli code** - Generate source code and implementations
+- **sqirvy-cli review** - Perform code reviews and analysis
+
+All commands support:
+
+- `-m/--model` - Specify the AI model to use
+- `-t/--temperature` - Control response randomness (0.0-1.0)
+- Input from stdin, files, and URLs
+- Output to stdout for pipeline usage
+
+## License
+
+Licensed under the terms specified in the LICENSE file.
