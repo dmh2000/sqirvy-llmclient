@@ -1,18 +1,21 @@
-.PHONY: build test clean
+.PHONY: build test clean lint
 
 PROJECT=sqirvy-cli
 BINDIR=../bin
 
-# detect variants of Windows
+# detect target OS and architecture
 ifeq ($(filter Windows%, $(OS)),Windows)
     arch := Windows
+	goarch := amd64
 else
     arch := $(shell uname -s)
 	ifeq ($(arch),Darwin)
 		arch := darwin
+		goarch := arm64
 	else 
 		ifeq ($(arch),Linux)
 			arch := linux
+			goarch := amd64
 		else 
 			echo "Unsupported OS: $(arch)"
 			exit 1
@@ -20,9 +23,8 @@ else
 	endif
 endif
 
-build: 
-	-staticcheck ./...
-	go vet ./...
+build: lint
+	@echo $(arch) $(goarch)
 	mkdir -p $(BINDIR)
 	GOOS=$(arch) GOARCH=amd64 go build -o $(BINDIR)/$(PROJECT) .
 	
@@ -30,6 +32,9 @@ build:
 # rm $(BINDIR)/$(PROJECT)
 # GOOS=$(arch) GOARCH=amd64 go build . 
 # upx -1 -o $(BINDIR)/$(PROJECT) $(PROJECT)
+
+lint: 
+	golangci-lint run ./...
 
 test:
 	@./test.sh 

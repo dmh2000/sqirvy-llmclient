@@ -1,5 +1,6 @@
-.PHONY: build test clean
+.PHONY: build test clean lint
 
+# SILENT := -s
 BINDIR=./bin
 SUBDIRS = sqirvy-cli
 
@@ -19,3 +20,8 @@ clean:
 		$(MAKE) $(SILENT)  -C $$dir clean; \
 	done
 	rm -rf bin
+
+lint:
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) $(SILENT)  -C $$dir lint; \
+	done

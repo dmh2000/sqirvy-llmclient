@@ -1,8 +1,10 @@
 .PHONY:  build test clean
 
-build:
-	staticcheck ./...
-	go vet ./...
+build: lint
+	@echo "no build for pkg/util"
+
+lint:
+	golangci-lint run ./...
 
 test:
 	@echo "Testing pkg/util"
