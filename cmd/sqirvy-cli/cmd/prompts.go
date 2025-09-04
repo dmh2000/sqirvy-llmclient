@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/dmh2000/sqirvy-llmclient/cmd/sqirvy-cli/cmd/util"
+	"github.com/dmh2000/sqirvy-llmclient/cmd/sqirvy-cli/util"
 )
 
 // queryPrompt contains the embedded content of the query.md file,
